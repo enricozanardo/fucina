@@ -8,10 +8,8 @@
 #   ./install/limen-rtx.sh                  # interactive menu
 #   ./install/limen-rtx.sh --no-tui install
 #   ./install/limen-rtx.sh --no-tui update
-#   LIMEN_GHCR_TOKEN=ghp_… ./install/limen-rtx.sh --no-tui install
 #
 # Env:
-#   LIMEN_GHCR_TOKEN / --token   read-only PAT for the private GHCR package
 #   LIMEN_MODEL_PROFILE          default catalogue profile (auto-picked by VRAM)
 #   LIMEN_LLAMA_CTX             default 8192 (4096 on cards under 8 GB)
 #   LIMEN_VERSION               image tag (default: VERSION file)
@@ -25,7 +23,6 @@ ENV_FILE="${ACCEL_ROOT}/docker/factory.env"
 CATALOG="${ACCEL_ROOT}/configs/model_catalog.json"
 VERSION_FILE="${ACCEL_ROOT}/VERSION"
 NO_TUI=0
-TOKEN="${LIMEN_GHCR_TOKEN:-}"
 ACTION=""
 
 log()  { printf '%s\n' "== $*"; }
@@ -39,8 +36,6 @@ usage() {
 while [ $# -gt 0 ]; do
     case "$1" in
         --no-tui) NO_TUI=1; shift ;;
-        --token) TOKEN="${2:-}"; shift 2 ;;
-        --token=*) TOKEN="${1#--token=}"; shift ;;
         -h|--help) usage; exit 0 ;;
         install|update|status|change-model|pair|uninstall|logs)
             ACTION="$1"; shift ;;
@@ -99,26 +94,6 @@ ui_input() {
             printf '%s [%s]: ' "${prompt}" "${default}"
             read -r result
             printf '%s' "${result:-${default}}"
-            ;;
-    esac
-}
-
-ui_password() {
-    local title="$1" prompt="$2" result
-    case "${UI_BACKEND}" in
-        whiptail)
-            result="$(whiptail --title "${title}" --passwordbox "${prompt}" 12 72 3>&1 1>&2 2>&3)" || return 1
-            printf '%s' "${result}"
-            ;;
-        dialog)
-            result="$(dialog --title "${title}" --passwordbox "${prompt}" 12 72 3>&1 1>&2 2>&3)" || return 1
-            clear
-            printf '%s' "${result}"
-            ;;
-        *)
-            printf '%s: ' "${prompt}"
-            stty -echo; read -r result; stty echo; printf '\n'
-            printf '%s' "${result}"
             ;;
     esac
 }
@@ -251,37 +226,6 @@ for row in rows:
 PY
 }
 
-ghcr_already_logged_in() {
-    # Heuristic: docker config lists ghcr.io credentials.
-    if [ -f "${HOME}/.docker/config.json" ]; then
-        grep -q 'ghcr.io' "${HOME}/.docker/config.json" 2>/dev/null && return 0
-    fi
-    return 1
-}
-
-ensure_ghcr_login() {
-    # Local source builds do not need GHCR.
-    if [ -f "${ACCEL_ROOT}/docker/Dockerfile" ]; then
-        log "Dockerfile present; GHCR login not required for a local build."
-        return 0
-    fi
-    if ghcr_already_logged_in; then
-        log "Already authenticated to ghcr.io"
-        return 0
-    fi
-    if [ -z "${TOKEN}" ]; then
-        if [ "${NO_TUI}" = "1" ]; then
-            die "Private GHCR package: set LIMEN_GHCR_TOKEN or pass --token (read-only PAT)."
-        fi
-        TOKEN="$(ui_password "GHCR login" \
-            "Paste a read-only GitHub PAT that can pull ghcr.io/${GITHUB_OWNER:-enricozanardo}/limen-factory")" \
-            || die "login cancelled"
-    fi
-    [ -n "${TOKEN}" ] || die "empty token"
-    log "Logging in to ghcr.io"
-    printf '%s' "${TOKEN}" | docker login ghcr.io -u "${LIMEN_GHCR_USER:-${USER}}" --password-stdin \
-        || die "docker login ghcr.io failed"
-}
 
 detect_lan_ip() {
     if command -v ip >/dev/null 2>&1; then
@@ -340,7 +284,6 @@ action_uninstall() {
 action_update() {
     local local_v remote_v
     local_v="$(read_version)"
-    ensure_ghcr_login
     if [ -d "${ACCEL_ROOT}/.git" ]; then
         log "Fetching latest limen-rtx / accelerator tags"
         git -C "${ACCEL_ROOT}" fetch --tags --quiet 2>/dev/null || true
@@ -420,8 +363,6 @@ action_install() {
     else
         "${INSTALL_DIR}/rtx_preflight.sh" --verify
     fi
-
-    ensure_ghcr_login
 
     local vram_mb ctx profile
     vram_mb="$(host_vram_mb)"

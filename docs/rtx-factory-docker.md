@@ -38,7 +38,7 @@ work from the board UI without a Docker socket.
 
 | Path | Who | What you install |
 |------|-----|------------------|
-| **Public bootstrap (`limen-rtx`)** | Buyers / operators | Clone the public repo, run the TUI. Pulls `ghcr.io/enricozanardo/limen-factory:<version>` (private package; needs a read-only PAT). |
+| **Public bootstrap (`limen-rtx`)** | Buyers / operators | Clone the public repo, run the TUI. Pulls `ghcr.io/enricozanardo/limen-factory:<version>` (public image — no token). |
 | **Private accelerator tree** | Developers | This repository. Builds the factory image from `docker/Dockerfile` via `docker-compose.build.yml`. |
 
 You need roughly **30 GB of free disk** (container images + GGUF weights). A 6 GB
@@ -134,10 +134,7 @@ git clone https://github.com/enricozanardo/limen-rtx.git
 cd limen-rtx
 ```
 
-Create a **read-only** GitHub personal access token that can pull private packages
-from `ghcr.io` (classic: `read:packages`, or a fine-grained token with package
-read on `limen-factory`). You will paste it into the installer once; afterwards
-`docker login` is reused.
+No GitHub token is required. The factory image on GHCR is public.
 
 ### Developers (private accelerator)
 
@@ -162,20 +159,17 @@ prompts (so a minimal Gentoo box without `dev-libs/newt` still works).
 Non-interactive:
 
 ```bash
-LIMEN_GHCR_TOKEN=ghp_… ./install/limen-rtx.sh --no-tui install
-# developers (local build — no token needed):
 ./install/limen-rtx.sh --no-tui install
 ```
 
 What install does:
 
 1. Runs `rtx_preflight.sh` (GPU visible inside Docker).
-2. Logs in to GHCR when no Dockerfile is present.
-3. Reads host VRAM, proposes a catalogue profile that fits (e.g. **qwen3-4b** on
+2. Reads host VRAM, proposes a catalogue profile that fits (e.g. **qwen3-4b** on
    a 6 GB card, **plain** on 12 GB+), lets you set context.
-4. Writes `docker/factory.env`, pulls or builds, starts the stack, waits for
+3. Writes `docker/factory.env`, pulls or builds, starts the stack, waits for
    `/health` and a `/translate` smoke test.
-5. Prints the LAN URL for board pairing.
+4. Prints the LAN URL for board pairing.
 
 You can still call the older scripts directly:
 
@@ -265,8 +259,10 @@ Compiled packs live under `./data/factory`; GGUFs under `./models`. Both survive
 Releasing a new version (maintainers): tag the private accelerator
 (`git tag v3.2.0 && git push --tags`). `.github/workflows/release.yml` builds and
 pushes `ghcr.io/enricozanardo/limen-factory:<version>` and syncs the curated
-bootstrap files into `limen-rtx`. The GHCR package stays **private**; set the
-`PUBLIC_REPO_TOKEN` secret on the private repo so the public tree can update.
+bootstrap files into `limen-rtx`. Keep the GHCR package **public** so buyers need
+no token (Package settings → Change visibility → Public, if a new release linked
+it private). Set the `PUBLIC_REPO_TOKEN` secret on the private repo so the public
+tree can update.
 
 ## 9. Troubleshooting
 
@@ -282,8 +278,10 @@ smaller profile (`qwen3-4b` on 6 GB).
 **Load times out mentioning the model watcher.** Recreate once:
 `docker compose $E up -d --force-recreate llama`.
 
-**GHCR pull denied.** `docker login ghcr.io` with a read-only PAT, or set
-`LIMEN_GHCR_TOKEN` before `./install/limen-rtx.sh`.
+**`docker pull` fails for `limen-factory`.** Confirm the package is public at
+https://github.com/users/enricozanardo/packages/container/package/limen-factory
+(Package settings → Change visibility → Public). No `docker login` should be
+needed.
 
 ---
 

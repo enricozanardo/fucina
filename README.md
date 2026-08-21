@@ -12,8 +12,11 @@ This repository holds only what an operator needs:
 - `configs/model_catalog.json` — profiles sized against your card (including
   **Qwen3-4B** for 6 GB GPUs such as an RTX 4050)
 
-The factory **image** is published privately to
-`ghcr.io/enricozanardo/limen-factory`. You need a read-only GitHub token once.
+The factory image is public on GHCR:
+
+`ghcr.io/enricozanardo/limen-factory`
+
+No GitHub token or `docker login` is required to install.
 
 ## Quick start
 
@@ -25,11 +28,9 @@ cd limen-rtx
 ./install/rtx_preflight.sh --install   # or follow the distro table in docs/
 ./install/rtx_preflight.sh --verify
 
-# Interactive install (asks for the GHCR token if needed)
-./install/limen-rtx.sh
-
-# Or non-interactive:
-LIMEN_GHCR_TOKEN=ghp_… ./install/limen-rtx.sh --no-tui install
+./install/limen-rtx.sh                 # interactive
+# or:
+./install/limen-rtx.sh --no-tui install
 ```
 
 Pair the board to `http://<this-lan-ip>:8770`.
@@ -39,7 +40,7 @@ Pair the board to `http://<this-lan-ip>:8770`.
 ```bash
 git pull
 ./install/limen-rtx.sh update
-# or: LIMEN_GHCR_TOKEN=… ./install/limen-rtx.sh --no-tui update
+# or: ./install/limen-rtx.sh --no-tui update
 ```
 
 ## Full guide
