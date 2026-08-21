@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "notes": "Single source of truth for RTX factory model profiles. Consumed by host/factory/server.py, host/scripts/fetch_model.sh, install/rtx_factory_docker.sh and install/limen-rtx.sh. weights_gb is the approximate VRAM for the weights alone; KV cache is added by the fit estimator from LIMEN_LLAMA_CTX.",
+  "profiles": [
+    {
+      "id": "qwen3-4b",
+      "title": "Qwen3-4B (Q4)",
+      "repo": "unsloth/Qwen3-4B-GGUF",
+      "file": "Qwen3-4B-Q4_K_M.gguf",
+      "glob": "*Q4_K_M.gguf",
+      "draft_repo": "",
+      "draft_glob": "",
+      "spec_type": "none",
+      "weights_gb": 3.0,
+      "min_vram_gb": 6,
+      "alias": "qwen3-4b",
+      "curl_fetch": true,
+      "notes": "Fits a 6 GB laptop GPU (e.g. RTX 4050) at context 4096–8192."
+    },
+    {
+      "id": "plain",
+      "title": "Qwen3-8B (Q4)",
+      "repo": "unsloth/Qwen3-8B-GGUF",
+      "file": "Qwen3-8B-Q4_K_M.gguf",
+      "glob": "*Q4_K_M.gguf",
+      "draft_repo": "",
+      "draft_glob": "",
+      "spec_type": "none",
+      "weights_gb": 6.0,
+      "min_vram_gb": 8,
+      "alias": "qwen3-8b",
+      "curl_fetch": true,
+      "notes": "Most robust for study and extraction on a 12–16 GB card."
+    },
+    {
+      "id": "eagle3",
+      "title": "Qwen3-8B + EAGLE-3 draft",
+      "repo": "unsloth/Qwen3-8B-GGUF",
+      "file": "Qwen3-8B-Q4_K_M.gguf",
+      "glob": "*Q4_K_M.gguf",
+      "draft_repo": "AngelSlim/Qwen3-8B_eagle3",
+      "draft_glob": "*.gguf",
+      "spec_type": "draft-eagle3",
+      "weights_gb": 8.0,
+      "min_vram_gb": 10,
+      "alias": "qwen3-8b",
+      "curl_fetch": false,
+      "notes": "Faster decode when VRAM allows; falls back to plain if the draft is missing."
+    },
+    {
+      "id": "qwen2.5",
+      "title": "Qwen2.5-14B Instruct (Q4)",
+      "repo": "Qwen/Qwen2.5-14B-Instruct-GGUF",
+      "file": "qwen2.5-14b-instruct-q4_k_m.gguf",
+      "glob": "*q4_k_m*.gguf",
+      "draft_repo": "",
+      "draft_glob": "",
+      "spec_type": "none",
+      "weights_gb": 9.0,
+      "min_vram_gb": 12,
+      "alias": "qwen2.5-14b",
+      "curl_fetch": true,
+      "notes": "Heavier teacher; tight on a 12 GB laptop GPU."
+    },
+    {
+      "id": "mtp",
+      "title": "Qwen3.6-27B MTP (Q4)",
+      "repo": "am17an/Qwen3.6-27B-MTP-GGUF",
+      "file": "",
+      "glob": "*Q4_K_M*.gguf",
+      "draft_repo": "",
+      "draft_glob": "",
+      "spec_type": "draft-mtp",
+      "weights_gb": 16.0,
+      "min_vram_gb": 16,
+      "alias": "qwen3.6-27b",
+      "curl_fetch": false,
+      "notes": "Needs a 16 GB card. Disabled on smaller GPUs. Requires the HF CLI fetcher."
+    }
+  ]
+}

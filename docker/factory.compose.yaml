@@ -1,0 +1,33 @@
+# Factory configuration used inside the Docker Compose stack.
+#
+# Mounted read-only at /etc/limen/factory.yaml and selected via
+# LIMEN_FACTORY_CONFIG so the in-tree configs/factory.yaml (developer default)
+# stays untouched. The llm.base_url below is a fallback only: docker-compose.yml
+# sets LIMEN_LLM_BASE_URL=http://llama:8080/v1, which takes precedence.
+
+server:
+  host: 0.0.0.0            # published to the LAN as <host>:8770
+  port: 8770
+  allow_origins: ["*"]     # board relays server-to-server; pin if you prefer
+
+llm:
+  base_url: http://llama:8080/v1   # internal Compose service name
+  model: qwen3-8b
+  autostart: false                 # llama runs as its own container, never via /llm/start
+
+factory:
+  output_dir: build/factory        # bind-mounted for persistence (see compose)
+  max_upload_mb: 25
+  limits:
+    max_atoms: 256
+    max_formulas: 128
+    max_program_ops: 4096
+
+sources:
+  packs: [legal, user]
+  cache_dir: build/factory/source_cache
+  limits:
+    max_candidates_per_search: 20
+    max_documents_per_build: 16
+    max_chars_per_document: 120000
+    max_total_chars: 400000

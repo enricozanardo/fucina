@@ -1,0 +1,80 @@
+# LIMEN-AI on-prem RTX factory (release / pull-by-tag form).
+#
+# Two services:
+#   llama    - upstream llama.cpp CUDA server, GPU via NVIDIA Container Toolkit,
+#              model read from ./models. Not published to the LAN.
+#   factory  - FastAPI KB factory image from GHCR, published on 0.0.0.0:8770.
+#
+#   docker compose --env-file docker/factory.env up -d
+#
+# For local development against the private accelerator tree, also pass
+#   -f docker-compose.build.yml
+# so the factory image is built from source instead of pulled.
+#
+# Model selection is shared state: the factory writes ./models/active_model.env
+# and docker/llama-entrypoint.sh reloads llama-server when it changes.
+
+services:
+  llama:
+    image: ${LIMEN_LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server-cuda}
+    entrypoint: ["/bin/sh", "/opt/limen/llama-entrypoint.sh"]
+    volumes:
+      - ./docker/llama-entrypoint.sh:/opt/limen/llama-entrypoint.sh:ro
+      - ./models:/models:ro
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      LIMEN_MODELS_DIR: /models
+      LIMEN_MODEL_FILE: ${LIMEN_MODEL_FILE:-}
+      LIMEN_LLM_ALIAS: ${LIMEN_LLM_ALIAS:-qwen3-8b}
+      LIMEN_LLAMA_CTX: ${LIMEN_LLAMA_CTX:-8192}
+      LIMEN_LLAMA_NGL: ${LIMEN_LLAMA_NGL:-99}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  factory:
+    image: ${LIMEN_FACTORY_IMAGE:-ghcr.io/enricozanardo/limen-factory:${LIMEN_VERSION:-4.0.0}}
+    depends_on:
+      - llama
+    user: "${LIMEN_UID:-1000}:${LIMEN_GID:-1000}"
+    environment:
+      LIMEN_LLM_BASE_URL: http://llama:8080/v1
+      LIMEN_LLM_MODEL: ${LIMEN_LLM_ALIAS:-qwen3-8b}
+      LIMEN_FACTORY_CONFIG: /etc/limen/factory.yaml
+      LIMEN_DOCKER_FACTORY: "1"
+      LIMEN_MODELS_DIR: /models
+      LIMEN_LLAMA_CTX: ${LIMEN_LLAMA_CTX:-8192}
+      HOME: /tmp
+      HF_HOME: /models/.hf_home
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: utility
+      LIMEN_VRAM_TOTAL_MB: ${LIMEN_VRAM_TOTAL_MB:-}
+      LIMEN_GPU_NAME: ${LIMEN_GPU_NAME:-}
+    volumes:
+      - ./docker/factory.compose.yaml:/etc/limen/factory.yaml:ro
+      - ./data/factory:/opt/limen-factory/build/factory
+      - ./models:/models
+    ports:
+      - target: 8770
+        published: 8770
+        protocol: tcp
+        host_ip: 0.0.0.0
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
