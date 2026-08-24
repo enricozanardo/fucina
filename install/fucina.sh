@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# limen-rtx.sh - install, update and manage the LIMEN-AI RTX factory.
+# fucina.sh - install, update and manage FUCINA, the LIMEN-AI RTX factory.
 #
-# Entry point for both the private accelerator tree and the public limen-rtx
+# Entry point for both the private accelerator tree and the public fucina
 # bootstrap repo. Prefers a whiptail/dialog TUI; falls back to plain prompts.
 # Non-interactive use: pass --no-tui and the action as an argument.
 #
-#   ./install/limen-rtx.sh                  # interactive menu
-#   ./install/limen-rtx.sh --no-tui install
-#   ./install/limen-rtx.sh --no-tui update
+#   ./install/fucina.sh                     # interactive menu
+#   ./install/fucina.sh --no-tui install
+#   ./install/fucina.sh --no-tui update
 #
 # Env:
 #   LIMEN_MODEL_PROFILE          default catalogue profile (auto-picked by VRAM)
@@ -30,7 +30,7 @@ err()  { printf 'ERROR: %s\n' "$*" >&2; }
 die()  { err "$*"; exit 1; }
 
 usage() {
-    sed -n '2,22p' "$0"
+    sed -n '2,16p' "$0"
 }
 
 while [ $# -gt 0 ]; do
@@ -285,7 +285,7 @@ action_update() {
     local local_v remote_v
     local_v="$(read_version)"
     if [ -d "${ACCEL_ROOT}/.git" ]; then
-        log "Fetching latest limen-rtx / accelerator tags"
+        log "Fetching latest fucina / accelerator tags"
         git -C "${ACCEL_ROOT}" fetch --tags --quiet 2>/dev/null || true
         remote_v="$(git -C "${ACCEL_ROOT}" tag -l 'v*' | sed 's/^v//' | sort -V | tail -n1)"
     else
@@ -352,7 +352,7 @@ pick_profile_interactive() {
 }
 
 action_install() {
-    log "limen-rtx install (tree: ${ACCEL_ROOT}, UI: ${UI_BACKEND})"
+    log "FUCINA install (tree: ${ACCEL_ROOT}, UI: ${UI_BACKEND})"
     [ -f "${CATALOG}" ] || die "Missing ${CATALOG}"
 
     if [ "${NO_TUI}" != "1" ]; then
@@ -391,12 +391,12 @@ Pair the board to:
   http://${ip}:8770
 
 Update later with:
-  ./install/limen-rtx.sh update"
+  ./install/fucina.sh update"
 }
 
 main_menu() {
     local choice
-    choice="$(ui_menu "LIMEN-AI RTX factory" "Choose an action" \
+    choice="$(ui_menu "FUCINA · LIMEN-AI RTX factory" "Choose an action" \
         install "Install or repair the stack" \
         change-model "Download / switch model" \
         update "Update to a newer release" \

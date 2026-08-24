@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "Single source of truth for RTX factory model profiles. Consumed by host/factory/server.py, host/scripts/fetch_model.sh, install/rtx_factory_docker.sh and install/limen-rtx.sh. weights_gb is the approximate VRAM for the weights alone; KV cache is added by the fit estimator from LIMEN_LLAMA_CTX.",
+  "notes": "Single source of truth for FUCINA (RTX factory) model profiles. Consumed by host/factory/server.py, host/scripts/fetch_model.sh, install/rtx_factory_docker.sh and install/fucina.sh. weights_gb is the approximate VRAM for the weights alone; KV cache is added by the fit estimator from LIMEN_LLAMA_CTX.",
   "profiles": [
     {
       "id": "qwen3-4b",

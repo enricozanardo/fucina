@@ -44,7 +44,7 @@ services:
               capabilities: [gpu]
 
   factory:
-    image: ${LIMEN_FACTORY_IMAGE:-ghcr.io/enricozanardo/limen-factory:4.0.0}
+    image: ${LIMEN_FACTORY_IMAGE:-ghcr.io/enricozanardo/limen-factory:${LIMEN_VERSION:-4.0.0}}
     depends_on:
       - llama
     user: "${LIMEN_UID:-1000}:${LIMEN_GID:-1000}"

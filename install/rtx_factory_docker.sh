@@ -8,9 +8,9 @@
 #   LIMEN_SKIP_MODEL=1 ./install/rtx_factory_docker.sh
 #   LIMEN_MODEL_PROFILE=plain ./install/rtx_factory_docker.sh
 #
-# Prerequisite: tree on disk (see docs/rtx-factory-docker.md) and a
+# Prerequisite: tree on disk (see docs/fucina-guide.md) and a
 # working GPU-in-Docker setup (./install/rtx_preflight.sh). Prefer
-# ./install/limen-rtx.sh for interactive install/update.
+# ./install/fucina.sh for interactive install/update.
 #
 # Env:
 #   LIMEN_MODEL_PROFILE   id from configs/model_catalog.json (default plain)
