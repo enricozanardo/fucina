@@ -21,7 +21,7 @@ another room — the board reaches FUCINA by URL and does not care where it live
 flowchart LR
   subgraph host ["Linux host with an RTX card - FUCINA"]
     subgraph compose ["docker compose"]
-      llama["llama :8080 (internal)<br/>llama.cpp CUDA + model watcher"]
+      llama["llama :8080<br/>llama.cpp CUDA + model watcher"]
       factory["factory :8770 (published)<br/>FastAPI control plane"]
       factory -->|"http://llama:8080/v1"| llama
     end
@@ -42,6 +42,13 @@ work from the board UI without handing anyone a Docker socket.
 > `ghcr.io/enricozanardo/limen-factory` (GHCR cannot rename a published package)
 > and the Compose service called `factory`. Commands you copy from this guide
 > work as-is.
+
+The board only ever talks to **8770**. Note that
+[docker-compose.yml](../docker-compose.yml) currently also publishes the `llama`
+service on **8080** across all interfaces, which is convenient for debugging but
+means anything on your LAN can reach the raw model endpoint. If you would rather
+keep it reachable only from the `factory` container, delete the `ports:` block
+from the `llama` service and leave its `expose: "8080"` in place.
 
 ---
 
