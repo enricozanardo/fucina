@@ -30,7 +30,7 @@ PROFILE="${LIMEN_MODEL_PROFILE:-plain}"
 HF_ENDPOINT="${LIMEN_HF_ENDPOINT:-https://huggingface.co}"
 CURL_IMAGE="${LIMEN_CURL_IMAGE:-curlimages/curl:8.12.1}"
 
-SCRIPT_VERSION="$(cat "${ACCEL_ROOT}/VERSION" 2>/dev/null || echo 4.0.0)"
+SCRIPT_VERSION="$(cat "${ACCEL_ROOT}/VERSION" 2>/dev/null || echo 5.2.3)"
 
 log() { printf '%s\n' "== $*"; }
 err() { printf 'ERROR: %s\n' "$*" >&2; }
@@ -280,7 +280,7 @@ mkdir -p "${ACCEL_ROOT}/docker" "${ACCEL_ROOT}/data/factory"
     echo "LIMEN_LLM_ALIAS=${LIMEN_LLM_ALIAS:-qwen3-8b}"
     echo "LIMEN_LLAMA_CTX=${LLAMA_CTX}"
     echo "LIMEN_LLAMA_NGL=${LIMEN_LLAMA_NGL:-99}"
-    echo "LIMEN_VERSION=${LIMEN_VERSION:-$(cat "${ACCEL_ROOT}/VERSION" 2>/dev/null || echo 4.0.0)}"
+    echo "LIMEN_VERSION=${LIMEN_VERSION:-$(cat "${ACCEL_ROOT}/VERSION" 2>/dev/null || echo 5.2.3)}"
     [ -n "${LIMEN_FACTORY_IMAGE:-}" ] && echo "LIMEN_FACTORY_IMAGE=${LIMEN_FACTORY_IMAGE}"
     [ -n "${LIMEN_LLAMA_IMAGE:-}" ] && echo "LIMEN_LLAMA_IMAGE=${LIMEN_LLAMA_IMAGE}"
     [ -n "${LIMEN_AI_VERSION:-}" ]  && echo "LIMEN_AI_VERSION=${LIMEN_AI_VERSION}"

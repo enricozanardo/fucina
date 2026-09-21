@@ -2,8 +2,9 @@
 #
 # Two services:
 #   llama    - upstream llama.cpp CUDA server, GPU via NVIDIA Container Toolkit,
-#              model read from ./models. Not published to the LAN.
-#   factory  - FastAPI KB factory image from GHCR, published on 0.0.0.0:8770.
+#              model read from ./models. Published on loopback only.
+#   factory  - FastAPI KB factory image from GHCR, published on :8770. Set
+#              LIMEN_FACTORY_BIND_IP to restrict which address that is.
 #
 #   docker compose --env-file docker/factory.env up -d
 #
@@ -24,7 +25,11 @@ services:
     expose:
       - "8080"
     ports:
-      - "8080:8080"
+      # Loopback only. The factory reaches llama over the compose network as
+      # http://llama:8080/v1, so this publish exists purely so an operator on the
+      # host can curl /v1/models while debugging. It used to bind 0.0.0.0, which
+      # offered an unauthenticated inference endpoint to the whole LAN.
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
     gpus: all
     environment:
@@ -44,7 +49,7 @@ services:
               capabilities: [gpu]
 
   factory:
-    image: ${LIMEN_FACTORY_IMAGE:-ghcr.io/enricozanardo/limen-factory:${LIMEN_VERSION:-4.0.0}}
+    image: ${LIMEN_FACTORY_IMAGE:-ghcr.io/enricozanardo/limen-factory:${LIMEN_VERSION:-5.2.3}}
     depends_on:
       - llama
     user: "${LIMEN_UID:-1000}:${LIMEN_GID:-1000}"
@@ -66,10 +71,18 @@ services:
       - ./data/factory:/opt/limen-factory/build/factory
       - ./models:/models
     ports:
+      # The factory has no authentication of its own, so whatever this binds to
+      # can build knowledge bases without credentials. 0.0.0.0 stays the default
+      # because a self-hosted factory has to be reachable from the board across
+      # the LAN, and that LAN is the operator's own.
+      #
+      # A shared deployment must NOT use the default: set LIMEN_FACTORY_BIND_IP to
+      # the host's tailnet address so the only route in is the subscription
+      # gateway (see gateway/), which authenticates and meters every request.
       - target: 8770
         published: 8770
         protocol: tcp
-        host_ip: 0.0.0.0
+        host_ip: ${LIMEN_FACTORY_BIND_IP:-0.0.0.0}
     restart: unless-stopped
     deploy:
       resources:

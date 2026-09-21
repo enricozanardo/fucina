@@ -129,7 +129,7 @@ ui_menu() {
 # ---------------------------------------------------------------------------
 
 read_version() {
-    tr -d '[:space:]' < "${VERSION_FILE}" 2>/dev/null || echo "4.0.0"
+    tr -d '[:space:]' < "${VERSION_FILE}" 2>/dev/null || echo "5.2.3"
 }
 
 compose_cmd() {

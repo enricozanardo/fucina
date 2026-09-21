@@ -315,6 +315,16 @@ in `/health`.
 
 ## Step 7 — Pair LUCIA to FUCINA
 
+A board can be paired one of two ways, and its Settings page presents them as a
+choice. Shipped units arrive on the **included factory**: a hosted FUCINA that
+authenticates each unit by its subscription token and meters the build allowance
+that came with the board. That exists so a buyer can compile a knowledge base on day
+one without owning a GPU. Everything below concerns the other option, **your own
+FUCINA**, where you run the factory yourself, nothing is metered, and no documents
+leave your premises. Switching is one setting; packs already built stay on the board
+either way, and the board stops sending its subscription token as soon as it is
+pointed away from the factory that issued it.
+
 Find the LAN address of the FUCINA host and confirm the board can reach it:
 
 ```bash
@@ -322,14 +332,52 @@ ip -4 -o addr show scope global | awk '!/docker|br-|veth/ {print $4}'
 curl -s http://<that-ip>:8770/health          # from the FUCINA host
 ```
 
-Then run the same curl **from the board** to prove the path works, and set
-Settings → factory URL = `http://<that-ip>:8770` in the LUCIA UI.
+Then run the same curl **from the board** to prove the path works, and in the LUCIA
+UI choose Settings → **My own FUCINA** with the URL `http://<that-ip>:8770`.
 
 If the host answers locally but the board cannot reach it, the cause is almost
 always a host firewall or Wi-Fi client isolation between the two. Open TCP 8770
-to the LAN and disable client isolation on the access point. Do not expose 8770
-to the open internet; for a remote factory use a private overlay such as
-WireGuard or Tailscale.
+to the LAN and disable client isolation on the access point.
+
+Be clear about what that port is: **the factory has no authentication of its own**,
+so anything that can reach 8770 can compile knowledge bases and read the tenant
+shelves. On your own LAN that is usually an acceptable trade, which is why the
+Compose file still binds `0.0.0.0` by default. Never expose it to the open internet.
+For a factory you need to reach remotely, put it on a private overlay such as
+WireGuard or Tailscale and restrict the publish to that interface:
+
+```bash
+# docker/factory.env
+LIMEN_FACTORY_BIND_IP=100.x.y.z        # the host's overlay address
+```
+
+With that set, 8770 is unreachable from the LAN and the physical network entirely,
+and only hosts on your overlay can talk to it. A factory serving several boards that
+are not all yours needs more than this — it needs something in front that
+authenticates each unit and keeps their shelves apart — which is what the included
+factory provides.
+
+One warning if you put the *board* on Tailscale as well. Its installer enables
+MagicDNS, which rewrites `/etc/resolv.conf` on the board to point at
+`100.100.100.100`. If your tailnet has no global nameservers configured, Tailscale
+forwards ordinary names to whatever it recorded as the system resolver, and on a
+PYNQ image that is `systemd-resolved` — which, finding a resolver file it does not
+own, adopts `100.100.100.100` as its own upstream. The two then forward to each
+other and every public name times out, including the included factory's. Address
+the overlay factory by its stable tailnet address rather than its MagicDNS name and
+give the board resolvers of its own:
+
+```bash
+# on the board
+sudo tailscale set --accept-dns=false
+printf '[Resolve]\nDNS=1.1.1.1 9.9.9.9\n' \
+    | sudo tee /etc/systemd/resolved.conf.d/10-limen-upstream.conf
+sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+sudo systemctl restart systemd-resolved
+```
+
+A board paired only to the included factory needs none of this, because it reaches
+that factory over ordinary internet DNS.
 
 **Checkpoint:** the board's Settings page reports the factory reachable, with
 the LLM reachable too.
