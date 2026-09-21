@@ -129,7 +129,21 @@ ui_menu() {
 # ---------------------------------------------------------------------------
 
 read_version() {
-    tr -d '[:space:]' < "${VERSION_FILE}" 2>/dev/null || echo "5.2.3"
+    tr -d '[:space:]' < "${VERSION_FILE}" 2>/dev/null || echo "5.2.4"
+}
+
+health_url() {
+    # An operator who restricts the factory to one interface - a tailnet address,
+    # say - has no listener on loopback, so probing 127.0.0.1 reports a dead
+    # factory that is in fact perfectly healthy. Ask the env file where it bound.
+    local ip=""
+    if [ -f "${ENV_FILE}" ]; then
+        ip="$(sed -n 's/^LIMEN_FACTORY_BIND_IP=//p' "${ENV_FILE}" | tail -n1 | tr -d '[:space:]')"
+    fi
+    case "${ip}" in
+        ""|"0.0.0.0"|"::") ip="127.0.0.1" ;;
+    esac
+    printf 'http://%s:8770/health' "${ip}"
 }
 
 compose_cmd() {
@@ -248,8 +262,8 @@ action_status() {
     (cd "${ACCEL_ROOT}" && eval "${cmd}" ps) || true
     echo
     log "Health"
-    curl -fsS -m3 http://127.0.0.1:8770/health 2>/dev/null | python3 -m json.tool 2>/dev/null \
-        || curl -fsS -m3 http://127.0.0.1:8770/health \
+    curl -fsS -m3 "$(health_url)" 2>/dev/null | python3 -m json.tool 2>/dev/null \
+        || curl -fsS -m3 "$(health_url)" \
         || err "Factory not answering on :8770"
 }
 
@@ -308,7 +322,7 @@ action_update() {
     log "Waiting for health…"
     local ok=0
     for _ in $(seq 1 60); do
-        h="$(curl -fsS -m3 http://127.0.0.1:8770/health 2>/dev/null || true)"
+        h="$(curl -fsS -m3 "$(health_url)" 2>/dev/null || true)"
         case "${h}" in
             *"\"version\":\"${remote_v}\""*|*"\"llm_reachable\":true"*)
                 ok=1; break
@@ -317,7 +331,7 @@ action_update() {
         sleep 2
     done
     [ "${ok}" = "1" ] || die "Factory did not become healthy after update."
-    curl -fsS -m3 http://127.0.0.1:8770/health || true
+    curl -fsS -m3 "$(health_url)" || true
     echo
 }
 
